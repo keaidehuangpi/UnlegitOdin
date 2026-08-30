@@ -57,6 +57,10 @@ public abstract class ItemInHandRendererMixin {
                 && itemStack.has(DataComponents.MAP_ID)
                 && offHandItem.isEmpty();
         ModuleAnimations.applyHandTransform(poseStack, hand, mapWithEmptyOffHand);
+        HumanoidArm arm = hand == InteractionHand.MAIN_HAND
+                ? player.getMainArm()
+                : player.getMainArm().getOpposite();
+        ModuleAnimations.applyLegacyItemTransform(poseStack, arm, itemStack);
     }
 
     @Inject(method = "swingArm", at = @At("HEAD"), cancellable = true)
@@ -102,6 +106,48 @@ public abstract class ItemInHandRendererMixin {
             ModuleAnimations.applyBlockAnimation(poseStack, arm, inverseArmHeight, attack);
         } else {
             ModuleAnimations.applyDefaultBlockAnimation(poseStack, arm, attack);
+        }
+    }
+
+    /** Adds the classic punch while food, potions, bows, or crossbows are being used. */
+    @Inject(
+            method = "renderArmWithItem",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/ItemInHandRenderer;renderItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemDisplayContext;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;I)V",
+                    ordinal = 1,
+                    shift = At.Shift.BEFORE
+            )
+    )
+    private void applyClassicUsePunch(
+            AbstractClientPlayer player,
+            float frameInterp,
+            float xRot,
+            InteractionHand hand,
+            float attack,
+            ItemStack itemStack,
+            float inverseArmHeight,
+            PoseStack poseStack,
+            SubmitNodeCollector submitNodeCollector,
+            int lightCoords,
+            CallbackInfo ci
+    ) {
+        if (!ModuleAnimations.isActive() || !player.isUsingItem() || attack <= 0f) return;
+
+        switch (itemStack.getUseAnimation()) {
+            case EAT, DRINK -> {
+                if (ModuleAnimations.shouldPunchWhileUsing(player, itemStack)) {
+                    ModuleAnimations.applyEatPunch(poseStack, attack);
+                }
+            }
+            case BOW, CROSSBOW -> {
+                if (ModuleAnimations.shouldPunchWhileUsing(player, itemStack)) {
+                    ModuleAnimations.applyBowPunch(poseStack, attack);
+                }
+            }
+            default -> {
+                // Other use animations retain vanilla transforms.
+            }
         }
     }
 

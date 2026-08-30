@@ -11,7 +11,7 @@ object SwingAnimations {
     enum class Mode(val tag: String) {
         Swipe("Swipe"), Spin("Spin"), Hook("Hook"), Dash("Dash"),
         Tap("Tap"), Inject("Inject"), Slap("Slap"), Akrien("Akrien"),
-        Smooth("Smooth"), Power("Power"), Feast("Feast")
+        Smooth("Smooth"), Power("Power"), Feast("Feast")/*, Ancient17("1.7")*/
     }
 
     private const val PI = Math.PI.toFloat()
@@ -96,6 +96,7 @@ object SwingAnimations {
                 poseStack.mulPose(Axis.XP.rotationDegrees(-80f))
                 poseStack.mulPose(Axis.YP.rotationDegrees(i * 35f))
             }
+            //Mode.Ancient17 -> ModuleAnimations.applyLegacySwing(poseStack, swing)
         }
     }
 

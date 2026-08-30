@@ -12,8 +12,14 @@ import com.odtheking.odin.features.Module
 import net.minecraft.util.Mth
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.entity.HumanoidArm
+import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.item.Items
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.ItemUseAnimation
+import net.minecraft.tags.ItemTags
 import org.joml.Quaternionf
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 /** First-person item and swing animation customization. */
 @Suppress("MagicNumber")
@@ -46,6 +52,31 @@ object ModuleAnimations : Module(
         desc = "Animation used when swinging the main-hand item."
     ).withDependency { swingAnimationsEnabled }
     private val swingDuration by NumberSetting("Swing Duration", 6, 1, 20, 1, desc = "Duration of the local player's swing in ticks.")
+    private val swingSpeedMultiplier by NumberSetting(
+        "Swing Speed Multiplier", 1f, 0.1f, 5f, 0.01f,
+        desc = "Multiplies the vanilla swing duration."
+    )
+
+    // Ancient Animations' configurable 1.7 swing arc.
+    private val legacySwingTransX by NumberSetting("1.7 Swing Trans X", 0.240f, -1f, 1f, 0.001f, desc = "Horizontal translation of the 1.7 swing.").withDependency { swingAnimationsEnabled }
+    private val legacySwingTransY by NumberSetting("1.7 Swing Trans Y", 0.128f, -1f, 1f, 0.001f, desc = "Vertical translation of the 1.7 swing.").withDependency { swingAnimationsEnabled }
+    private val legacySwingTransZ by NumberSetting("1.7 Swing Trans Z", -0.052f, -1f, 1f, 0.001f, desc = "Depth translation of the 1.7 swing.").withDependency { swingAnimationsEnabled }
+    private val legacySwingRotX by NumberSetting("1.7 Swing Rot X", -65f, -180f, 180f, 0.1f, desc = "X rotation of the 1.7 swing.").withDependency { swingAnimationsEnabled }
+    private val legacySwingRotY by NumberSetting("1.7 Swing Rot Y", 25f, -180f, 180f, 0.1f, desc = "First Y rotation of the 1.7 swing.").withDependency { swingAnimationsEnabled }
+    private val legacySwingRotZ by NumberSetting("1.7 Swing Rot Z", -7.5f, -180f, 180f, 0.1f, desc = "Z rotation of the 1.7 swing.").withDependency { swingAnimationsEnabled }
+    private val legacySwingRotY2 by NumberSetting("1.7 Swing Rot Y2", 50f, -180f, 180f, 0.1f, desc = "Final Y rotation of the 1.7 swing.").withDependency { swingAnimationsEnabled }
+
+    private val eatPunchEnabled by BooleanSetting("Eating/Drinking Punch", false, desc = "Swings while consuming food or potions.")
+    private val bowPunchEnabled by BooleanSetting("Bow Draw Punch", false, desc = "Swings while drawing a bow or crossbow.")
+
+    private val legacyItemTransformEnabled by BooleanSetting("1.7 Item Transform", false, desc = "Applies the classic configurable transform to tools.")
+    private val legacyItemPosX by NumberSetting("1.7 Item Pos X", 0f, -1f, 1f, 0.001f, desc = "Horizontal item offset.").withDependency { legacyItemTransformEnabled }
+    private val legacyItemPosY by NumberSetting("1.7 Item Pos Y", 0f, -1f, 1f, 0.001f, desc = "Vertical item offset.").withDependency { legacyItemTransformEnabled }
+    private val legacyItemPosZ by NumberSetting("1.7 Item Pos Z", 0f, -1f, 1f, 0.001f, desc = "Depth item offset.").withDependency { legacyItemTransformEnabled }
+    private val legacyItemRotX by NumberSetting("1.7 Item Rot X", 0f, -180f, 180f, 0.1f, desc = "X item rotation.").withDependency { legacyItemTransformEnabled }
+    private val legacyItemRotY by NumberSetting("1.7 Item Rot Y", 0f, -180f, 180f, 0.1f, desc = "Y item rotation.").withDependency { legacyItemTransformEnabled }
+    private val legacyItemRotZ by NumberSetting("1.7 Item Rot Z", 0f, -180f, 180f, 0.1f, desc = "Z item rotation.").withDependency { legacyItemTransformEnabled }
+    private val legacyItemScale by NumberSetting("1.7 Item Scale", 1f, 0.1f, 3f, 0.01f, desc = "Item scale.").withDependency { legacyItemTransformEnabled }
 
     private val blockAnimation by SelectorSetting(
         "Blocking Animation",
@@ -79,6 +110,10 @@ object ModuleAnimations : Module(
     fun isOffHandActive(): Boolean = enabled && offHandEnabled
 
     @JvmStatic
+    fun shouldApplyLegacyItemTransform(stack: ItemStack): Boolean =
+        enabled && legacyItemTransformEnabled && isTool(stack)
+
+    @JvmStatic
     fun isEquipOffsetActive(): Boolean = enabled && equipOffsetEnabled
 
     @JvmStatic
@@ -93,7 +128,80 @@ object ModuleAnimations : Module(
     @JvmStatic
     fun swingDuration(): Int = swingDuration
 
+    /** Applies the source module's swing-duration multiplier to vanilla's duration. */
+    @JvmStatic
+    fun modifySwingDuration(original: Int): Int {
+        if (!enabled) return original
+        val baseDuration = if (swingAnimationsEnabled && swingDuration != 6) swingDuration else original
+        val duration = (baseDuration * swingSpeedMultiplier).roundToInt()
+        return duration.coerceAtLeast(1)
+    }
+
+    /** True when the active item should receive Ancient Animations' consume punch. */
+    @JvmStatic
+    fun shouldPunchWhileUsing(entity: LivingEntity): Boolean {
+        if (!enabled || !entity.isUsingItem) return false
+        val stack = entity.useItem
+        return (eatPunchEnabled && isEatingOrDrinking(stack)) ||
+            (bowPunchEnabled && isDrawingBow(stack))
+    }
+
+    @JvmStatic
+    fun shouldPunchWhileUsing(entity: LivingEntity, renderedStack: ItemStack): Boolean {
+        if (!shouldPunchWhileUsing(entity)) return false
+        val activeAction = entity.useItem.getUseAnimation()
+        return renderedStack.getUseAnimation() == activeAction
+    }
+
+    @JvmStatic
+    fun isEatingOrDrinking(stack: ItemStack): Boolean =
+        stack.getUseAnimation() == ItemUseAnimation.EAT || stack.getUseAnimation() == ItemUseAnimation.DRINK
+
+    @JvmStatic
+    fun isDrawingBow(stack: ItemStack): Boolean =
+        stack.getUseAnimation() == ItemUseAnimation.BOW || stack.getUseAnimation() == ItemUseAnimation.CROSSBOW
+
     internal fun swingModeName(): SwingAnimations.Mode = SwingAnimations.Mode.entries[swingMode]
+
+    /** Exact configurable 1.7 arc from Ancient Animations. */
+    @JvmStatic
+    fun applyLegacySwing(poseStack: PoseStack, swingProgress: Float) {
+        val progress = swingProgress.coerceIn(0f, 1f)
+        val arc = Mth.sin(Mth.sqrt(progress) * Math.PI)
+        poseStack.translate(arc * legacySwingTransX, 0f, 0f)
+        poseStack.translate(0f, arc * legacySwingTransY, 0f)
+        poseStack.translate(0f, 0f, arc * legacySwingTransZ)
+        poseStack.mulPose(Axis.YP.rotationDegrees(arc * legacySwingRotY))
+        poseStack.mulPose(Axis.XP.rotationDegrees(arc * legacySwingRotX))
+        poseStack.mulPose(Axis.ZP.rotationDegrees(arc * legacySwingRotZ))
+        poseStack.mulPose(Axis.YP.rotationDegrees(arc * legacySwingRotY2))
+    }
+
+    /** Ancient Animations' old eating/drinking punch. */
+    @JvmStatic
+    fun applyEatPunch(poseStack: PoseStack, swingProgress: Float) {
+        val progress = swingProgress.coerceIn(0f, 1f)
+        val arc = Mth.sin(Mth.sqrt(progress) * Math.PI)
+        poseStack.translate(arc * -0.4f, 0f, 0f)
+        poseStack.mulPose(Axis.YP.rotationDegrees(arc * -20f))
+        poseStack.mulPose(Axis.XP.rotationDegrees(arc * -80f))
+    }
+
+    /** Ancient Animations' old bow-draw punch. */
+    @JvmStatic
+    fun applyBowPunch(poseStack: PoseStack, swingProgress: Float) {
+        val progress = swingProgress.coerceIn(0f, 1f)
+        val sqrtArc = Mth.sin(Mth.sqrt(progress) * Math.PI)
+        val tx = -0.4f * sqrtArc
+        val ty = 0.2f * Mth.sin(Mth.sqrt(progress) * Math.PI * 2.0)
+        val tz = -0.2f * Mth.sin(progress * Math.PI)
+        poseStack.translate(tx, ty, tz)
+
+        val f = Mth.sin(progress * progress * Math.PI)
+        poseStack.mulPose(Axis.YP.rotationDegrees(f * 20f))
+        poseStack.mulPose(Axis.ZP.rotationDegrees(sqrtArc * 20f))
+        poseStack.mulPose(Axis.XP.rotationDegrees(sqrtArc * -80f))
+    }
 
     @JvmStatic
     fun modifyStride(original: Float): Float {
@@ -128,6 +236,25 @@ object ModuleAnimations : Module(
             applyTransform(poseStack, offHandX, offHandY, offHandItemScale, offHandPositiveX, offHandPositiveY, offHandPositiveZ)
         }
     }
+
+    /** Applies the source module's tool-only item transform after vanilla's hand base transform. */
+    @JvmStatic
+    fun applyLegacyItemTransform(poseStack: PoseStack, arm: HumanoidArm, stack: ItemStack) {
+        if (!shouldApplyLegacyItemTransform(stack)) return
+        poseStack.translate(legacyItemPosX, legacyItemPosY, legacyItemPosZ)
+        poseStack.mulPose(Axis.XP.rotationDegrees(legacyItemRotX))
+        poseStack.mulPose(Axis.YP.rotationDegrees(legacyItemRotY))
+        poseStack.mulPose(Axis.ZP.rotationDegrees(legacyItemRotZ))
+        poseStack.scale(legacyItemScale, legacyItemScale, legacyItemScale)
+    }
+
+    /** Same tool classification used by Ancient Animations. */
+    @JvmStatic
+    fun isTool(stack: ItemStack): Boolean =
+        stack.`is`(ItemTags.SWORDS) || stack.`is`(ItemTags.AXES) ||
+            stack.`is`(ItemTags.PICKAXES) || stack.`is`(ItemTags.SHOVELS) ||
+            stack.`is`(ItemTags.HOES) || stack.`is`(Items.BOW) ||
+            stack.`is`(Items.CROSSBOW) || stack.`is`(Items.TRIDENT)
 
     @JvmStatic
     fun applyBlockAnimation(poseStack: PoseStack, arm: HumanoidArm, equipProgress: Float, swingProgress: Float) {
