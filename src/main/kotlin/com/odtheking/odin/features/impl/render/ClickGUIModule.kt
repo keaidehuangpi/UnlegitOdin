@@ -108,7 +108,7 @@ object ClickGUIModule : Module(
                     "")
             }
 
-            if (hasSentUpdateMessage || latestVersionNumber == null) return@on
+            /*if (hasSentUpdateMessage || latestVersionNumber == null) return@on
             hasSentUpdateMessage = true
 
             modMessage(
@@ -141,7 +141,7 @@ object ClickGUIModule : Module(
                 ""
             )
 
-            alert("Odin Update Available")
+            alert("Odin Update Available")*/
         }
     }
 
