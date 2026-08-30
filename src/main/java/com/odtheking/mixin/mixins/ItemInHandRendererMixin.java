@@ -12,7 +12,9 @@ import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemUseAnimation;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -61,6 +63,67 @@ public abstract class ItemInHandRendererMixin {
                 ? player.getMainArm()
                 : player.getMainArm().getOpposite();
         ModuleAnimations.applyLegacyItemTransform(poseStack, arm, itemStack);
+    }
+
+    /** Applies per-hand size after vanilla has finished composing the item transform. */
+    @Inject(
+            method = "renderItem",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/item/ItemStackRenderState;submit(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;III)V")
+    )
+    private void applyItemSize(
+            LivingEntity livingEntity,
+            ItemStack itemStack,
+            ItemDisplayContext displayContext,
+            PoseStack poseStack,
+            SubmitNodeCollector submitNodeCollector,
+            int lightCoords,
+            CallbackInfo ci
+    ) {
+        ModuleAnimations.applyItemSize(poseStack, displayContext);
+    }
+
+    @Inject(
+            method = "renderPlayerArm",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/EntityRenderDispatcher;getPlayerRenderer(Lnet/minecraft/client/player/AbstractClientPlayer;)Lnet/minecraft/client/renderer/entity/player/AvatarRenderer;")
+    )
+    private void applyArmSize(
+            PoseStack poseStack,
+            SubmitNodeCollector submitNodeCollector,
+            int lightCoords,
+            float equipProgress,
+            float swingProgress,
+            HumanoidArm arm,
+            CallbackInfo ci
+    ) {
+        ModuleAnimations.applyArmSize(poseStack, arm);
+    }
+
+    @Inject(
+            method = "renderMapHand",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/core/ClientAsset$Texture;texturePath()Lnet/minecraft/resources/Identifier;")
+    )
+    private void applyMapHandSize(
+            PoseStack poseStack,
+            SubmitNodeCollector submitNodeCollector,
+            int lightCoords,
+            HumanoidArm arm,
+            CallbackInfo ci
+    ) {
+        ModuleAnimations.applyMapSize(poseStack, arm, false);
+    }
+
+    @Inject(
+            method = "renderMap",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SubmitNodeCollector;submitCustomGeometry(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/rendertype/RenderType;Lnet/minecraft/client/renderer/SubmitNodeCollector$CustomGeometryRenderer;)V")
+    )
+    private void applyTwoHandedMapSize(
+            PoseStack poseStack,
+            SubmitNodeCollector submitNodeCollector,
+            int lightCoords,
+            ItemStack itemStack,
+            CallbackInfo ci
+    ) {
+        ModuleAnimations.applyMapSize(poseStack, HumanoidArm.RIGHT, true);
     }
 
     @Inject(method = "swingArm", at = @At("HEAD"), cancellable = true)

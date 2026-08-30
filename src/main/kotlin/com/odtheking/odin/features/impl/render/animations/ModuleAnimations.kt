@@ -16,6 +16,7 @@ import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.item.Items
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.ItemUseAnimation
+import net.minecraft.world.item.ItemDisplayContext
 import net.minecraft.tags.ItemTags
 import org.joml.Quaternionf
 import kotlin.math.min
@@ -29,7 +30,7 @@ object ModuleAnimations : Module(
     category = Category.RENDER,
 ) {
     private val mainHandEnabled by BooleanSetting("Main Hand", false, desc = "Enables custom main-hand item transformations.")
-    private val mainHandItemScale by NumberSetting("Main Hand Item Scale", 0f, -5f, 5f, 0.01f, desc = "Moves the main-hand item along the view axis.").withDependency { mainHandEnabled }
+    private val mainHandSize by NumberSetting("Main Hand Size", 1f, 0.1f, 3f, 0.01f, desc = "Scales the main-hand item and arm.").withDependency { mainHandEnabled }
     private val mainHandX by NumberSetting("Main Hand X", 0f, -5f, 5f, 0.01f, desc = "Moves the main-hand item on the X axis.").withDependency { mainHandEnabled }
     private val mainHandY by NumberSetting("Main Hand Y", 0f, -5f, 5f, 0.01f, desc = "Moves the main-hand item on the Y axis.").withDependency { mainHandEnabled }
     private val mainHandPositiveX by NumberSetting("Main Hand Rotation X", 0f, -50f, 50f, 0.1f, desc = "Rotates the main-hand item around X.").withDependency { mainHandEnabled }
@@ -37,7 +38,7 @@ object ModuleAnimations : Module(
     private val mainHandPositiveZ by NumberSetting("Main Hand Rotation Z", 0f, -50f, 50f, 0.1f, desc = "Rotates the main-hand item around Z.").withDependency { mainHandEnabled }
 
     private val offHandEnabled by BooleanSetting("Off Hand", false, desc = "Enables custom off-hand item transformations.")
-    private val offHandItemScale by NumberSetting("Off Hand Item Scale", 0f, -5f, 5f, 0.01f, desc = "Moves the off-hand item along the view axis.").withDependency { offHandEnabled }
+    private val offHandSize by NumberSetting("Off Hand Size", 1f, 0.1f, 3f, 0.01f, desc = "Scales the off-hand item and arm.").withDependency { offHandEnabled }
     private val offHandX by NumberSetting("Off Hand X", 0f, -1f, 1f, 0.01f, desc = "Moves the off-hand item on the X axis.").withDependency { offHandEnabled }
     private val offHandY by NumberSetting("Off Hand Y", 0f, -1f, 1f, 0.01f, desc = "Moves the off-hand item on the Y axis.").withDependency { offHandEnabled }
     private val offHandPositiveX by NumberSetting("Off Hand Rotation X", 0f, -50f, 50f, 0.1f, desc = "Rotates the off-hand item around X.").withDependency { offHandEnabled }
@@ -219,22 +220,66 @@ object ModuleAnimations : Module(
                     poseStack,
                     (mainHandX + offHandX) / 2f,
                     (mainHandY + offHandY) / 2f,
-                    (mainHandItemScale + offHandItemScale) / 2f,
+                    (mainHandSize + offHandSize) / 2f,
                     (mainHandPositiveX + offHandPositiveX) / 2f,
                     (mainHandPositiveY + offHandPositiveY) / 2f,
                     (mainHandPositiveZ + offHandPositiveZ) / 2f,
                 )
-                mainHandEnabled -> poseStack.translate(0f, 0f, mainHandItemScale)
-                offHandEnabled -> applyTransform(poseStack, offHandX, offHandY, offHandItemScale, offHandPositiveX, offHandPositiveY, offHandPositiveZ)
+                mainHandEnabled -> applyTransform(poseStack, 0f, 0f, mainHandSize, 0f, 0f, 0f)
+                offHandEnabled -> applyTransform(poseStack, offHandX, offHandY, offHandSize, offHandPositiveX, offHandPositiveY, offHandPositiveZ)
             }
             return
         }
 
         if (hand == InteractionHand.MAIN_HAND && mainHandEnabled) {
-            applyTransform(poseStack, mainHandX, mainHandY, mainHandItemScale, mainHandPositiveX, mainHandPositiveY, mainHandPositiveZ)
+            applyTransform(poseStack, mainHandX, mainHandY, mainHandSize, mainHandPositiveX, mainHandPositiveY, mainHandPositiveZ)
         } else if (hand == InteractionHand.OFF_HAND && offHandEnabled) {
-            applyTransform(poseStack, offHandX, offHandY, offHandItemScale, offHandPositiveX, offHandPositiveY, offHandPositiveZ)
+            applyTransform(poseStack, offHandX, offHandY, offHandSize, offHandPositiveX, offHandPositiveY, offHandPositiveZ)
         }
+    }
+
+    /** Applies the configured size at the final item-model submission point. */
+    @JvmStatic
+    fun applyItemSize(poseStack: PoseStack, displayContext: ItemDisplayContext) {
+        if (!enabled) return
+        val size = when (displayContext) {
+            ItemDisplayContext.FIRST_PERSON_RIGHT_HAND -> if (mainHandEnabled) mainHandSize else 1f
+            ItemDisplayContext.FIRST_PERSON_LEFT_HAND -> if (offHandEnabled) offHandSize else 1f
+            else -> 1f
+        }
+        if (size != 1f) poseStack.scale(size, size, size)
+    }
+
+    /** Applies the configured size to the first-person arm model. */
+    @JvmStatic
+    fun applyArmSize(poseStack: PoseStack, arm: HumanoidArm) {
+        if (!enabled) return
+        val player = OdinMod.mc.player ?: return
+        val size = when {
+            arm == player.mainArm && mainHandEnabled -> mainHandSize
+            arm != player.mainArm && offHandEnabled -> offHandSize
+            else -> 1f
+        }
+        if (size != 1f) poseStack.scale(size, size, size)
+    }
+
+    /** Applies size to map rendering, including the two-handed map path. */
+    @JvmStatic
+    fun applyMapSize(poseStack: PoseStack, arm: HumanoidArm, bothHands: Boolean) {
+        if (!enabled) return
+        val size = if (bothHands) {
+            if (mainHandEnabled && offHandEnabled) (mainHandSize + offHandSize) / 2f
+            else if (mainHandEnabled) mainHandSize
+            else if (offHandEnabled) offHandSize
+            else 1f
+        } else {
+            when {
+                arm == OdinMod.mc.player?.mainArm && mainHandEnabled -> mainHandSize
+                arm != OdinMod.mc.player?.mainArm && offHandEnabled -> offHandSize
+                else -> 1f
+            }
+        }
+        if (size != 1f) poseStack.scale(size, size, size)
     }
 
     /** Applies the source module's tool-only item transform after vanilla's hand base transform. */
@@ -273,8 +318,16 @@ object ModuleAnimations : Module(
         oneSeven(poseStack, arm, swingProgress)
     }
 
-    private fun applyTransform(poseStack: PoseStack, x: Float, y: Float, z: Float, rotateX: Float, rotateY: Float, rotateZ: Float) {
-        poseStack.translate(x, y, z)
+    private fun applyTransform(
+        poseStack: PoseStack,
+        x: Float,
+        y: Float,
+        size: Float,
+        rotateX: Float,
+        rotateY: Float,
+        rotateZ: Float,
+    ) {
+        poseStack.translate(x, y, 0f)
         poseStack.mulPose(Axis.XP.rotationDegrees(rotateX))
         poseStack.mulPose(Axis.YP.rotationDegrees(rotateY))
         poseStack.mulPose(Axis.ZP.rotationDegrees(rotateZ))
