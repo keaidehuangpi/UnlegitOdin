@@ -23,8 +23,8 @@ object HitEffect : Module(
         if (System.currentTimeMillis() - stampHit < hitMarkTime) {
             val color = Color(255, 0, 0)
             val gap = 2f
-            val centerX = mc.window.guiScaledWidth / 2f
-            val centerY = mc.window.guiScaledHeight / 2f
+            val centerX = mc.window.screenWidth / 2f
+            val centerY = mc.window.screenHeight / 2f
             drawLine(centerX + gap, centerY + gap, centerX + gap + size, centerY + gap + size, color, width.toFloat())
             drawLine(centerX - gap, centerY - gap, centerX - gap - size, centerY - gap - size, color, width.toFloat())
             drawLine(centerX - gap, centerY + gap, centerX - gap - size, centerY + gap + size, color, width.toFloat())
