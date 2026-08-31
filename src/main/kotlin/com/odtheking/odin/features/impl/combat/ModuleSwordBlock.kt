@@ -22,22 +22,15 @@ object ModuleSwordBlock : Module(
     val onlyVisual by BooleanSetting("OnlyVisual", false, desc = "Only changes the client-side blocking animation.")
     val fakeOnPressing by BooleanSetting("FakeOnPressing", false, desc = "Shows blocking while the use key is held.")
     val noShield by BooleanSetting("NoShield", false, desc = "Allows visual sword blocking without a shield in the off hand.")
-    val everythingBlock by BooleanSetting("EverythingBlock", false, desc = "Allows visual sword blocking with any main-hand item.")
     val hideShieldSlot by BooleanSetting("HideShieldSlot", false, desc = "Keeps the source module's shield-slot option.")
     val applyToThirdPersonView by BooleanSetting("ApplyToThirdPersonView", true, desc = "Applies sword blocking to your third-person model.")
     private val alwaysHideShield by BooleanSetting("AlwaysHideShield", false, desc = "Hides a shield in the off hand whenever SwordBlock is enabled.")
 
-    /** True when the entity should render its main-hand item as if it were blocking. */
+    /** True when the entity should render a sword as if it were being used. */
     @JvmStatic
     @JvmOverloads
     fun shouldAnimateSwordBlock(entity: LivingEntity, mainHandItem: ItemStack = entity.mainHandItem): Boolean {
-        return enabled && shouldApplySwordBlock(entity) && shouldUseBlockAnimation(mainHandItem)
-    }
-
-    /** True when the item can use SwordBlock's visual block animation. */
-    @JvmStatic
-    fun shouldUseBlockAnimation(stack: ItemStack): Boolean {
-        return isSword(stack) || (enabled && everythingBlock)
+        return enabled && shouldApplySwordBlock(entity) && isSword(mainHandItem)
     }
 
     @JvmStatic
@@ -50,7 +43,7 @@ object ModuleSwordBlock : Module(
         mainHandStack: ItemStack = mc.player?.mainHandItem ?: ItemStack.EMPTY,
     ): Boolean {
         if (!enabled || offHandStack.item !is ShieldItem) return false
-        return isSword(mainHandStack) || everythingBlock || alwaysHideShield
+        return isSword(mainHandStack) || alwaysHideShield
     }
 
     private fun shouldApplySwordBlock(entity: LivingEntity): Boolean {

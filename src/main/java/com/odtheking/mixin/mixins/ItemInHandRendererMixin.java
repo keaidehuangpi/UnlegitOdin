@@ -10,6 +10,7 @@ import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.item.ItemStack;
@@ -93,7 +94,7 @@ public abstract class ItemInHandRendererMixin {
             int lightCoords,
             CallbackInfo ci
     ) {
-        if (!ModuleSwordBlock.shouldUseBlockAnimation(itemStack)) return;
+        if (!itemStack.typeHolder().is(ItemTags.SWORDS)) return;
 
         HumanoidArm arm = hand == InteractionHand.MAIN_HAND
                 ? player.getMainArm()
