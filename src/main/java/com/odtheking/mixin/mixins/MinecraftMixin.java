@@ -4,7 +4,6 @@ import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.odtheking.odin.events.BlockInteractEvent;
 import com.odtheking.odin.events.EntityInteractEvent;
 import com.odtheking.odin.features.impl.combat.ModuleSwordBlock;
-import com.odtheking.odin.features.impl.render.animations.ModuleAnimations;
 import com.odtheking.odin.features.impl.boss.TerminalSolver;
 import com.odtheking.odin.utils.skyblock.dungeon.terminals.TerminalUtils;
 import net.minecraft.client.Minecraft;
@@ -26,32 +25,6 @@ public abstract class MinecraftMixin {
     @Shadow
     @Nullable
     public HitResult hitResult;
-
-    private boolean ancientPunchStarted;
-
-    /** Recreates the old attack-while-using loop for food, potions, bows, and crossbows. */
-    @Inject(method = "handleKeybinds", at = @At("HEAD"))
-    private void ancientAnimationsPunch(CallbackInfo ci) {
-        LocalPlayer player = ((Minecraft) (Object) this).player;
-        if (player == null || !ModuleAnimations.shouldPunchWhileUsing(player)) {
-            ancientPunchStarted = false;
-            return;
-        }
-
-        Minecraft minecraft = (Minecraft) (Object) this;
-        boolean attackDown = minecraft.options.keyAttack.isDown();
-        boolean useDown = minecraft.options.keyUse.isDown();
-        if (!attackDown || !useDown) {
-            if (!attackDown) ancientPunchStarted = false;
-            return;
-        }
-
-        // The first attack starts immediately; subsequent swings are limited by LivingEntity.swing().
-        if (!ancientPunchStarted || minecraft.hitResult instanceof BlockHitResult) {
-            player.swing(InteractionHand.MAIN_HAND);
-            ancientPunchStarted = true;
-        }
-    }
 
     /**
      * While an item is being used (the shield case), vanilla consumes attack
