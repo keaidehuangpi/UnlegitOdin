@@ -115,34 +115,6 @@ public abstract class ItemInHandRendererMixin {
         return ModuleAnimations.shouldIgnoreBlocking() ? 0.0F : equipProgress;
     }
 
-    /**
-     * The shield makes the client lower both hand heights while it is being used. That vanilla
-     * equip animation is correct for a shield, but it must not be applied to the sword that is
-     * being rendered as a legacy blockhit, otherwise the sword dips and rises independently of
-     * the attack swing.
-     */
-    @ModifyArg(
-            method = "renderArmWithItem",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/ItemInHandRenderer;applyItemArmTransform(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/world/entity/HumanoidArm;F)V",
-                    ordinal = 1
-            ),
-            index = 2
-    )
-    private float stabilizeSwordBlockEquipOffset(
-            float equipProgress,
-            @Local(argsOnly = true, name = "player") AbstractClientPlayer player,
-            @Local(argsOnly = true, name = "hand") InteractionHand hand,
-            @Local(argsOnly = true, name = "itemStack") ItemStack itemStack
-    ) {
-        if (hand == InteractionHand.MAIN_HAND
-                && ModuleSwordBlock.shouldAnimateSwordBlock(player, itemStack)) {
-            return 0.0F;
-        }
-        return equipProgress;
-    }
-
     @ModifyArg(
             method = "applyItemArmTransform",
             at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(FFF)V"),
