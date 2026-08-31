@@ -13,7 +13,6 @@
     "mixins.BossBarHealthOverlayMixin",
     "mixins.ChatListenerMixin",
     "mixins.ChatScreenMixin",
-    "mixins.ClientAvatarStateAnimationsMixin",
     "mixins.ClientPacketListenerMixin",
     "mixins.EntityRendererMixin",
     "mixins.ExperienceBarRendererMixin",
@@ -30,9 +29,7 @@
     "mixins.MouseHandlerMixin",
     "mixins.MultiPlayerGameModeMixin",
     "mixins.ScreenEffectRendererMixin",
-    "mixins.ScreenMixin",
-    "mixins.ItemInHandRendererMixin",
-    "mixins.LivingEntityAnimationsMixin"
+    "mixins.ScreenMixin"
   ],
   "mixins": [
     "mixins.ConnectionMixin",
