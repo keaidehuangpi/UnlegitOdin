@@ -8,9 +8,7 @@
   },
   "client": [
     "accessors.BeaconBeamAccessor",
-    "accessors.MultiPlayerGameModeAccessor",
     "mixins.AbstractContainerScreenMixin",
-    "mixins.ArmedEntityRenderStateMixin",
     "mixins.AvatarRendererMixin",
     "mixins.BossBarHealthOverlayMixin",
     "mixins.ChatListenerMixin",

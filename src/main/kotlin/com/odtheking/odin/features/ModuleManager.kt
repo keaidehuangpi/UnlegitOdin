@@ -11,7 +11,6 @@ import com.odtheking.odin.config.ModuleConfig
 import com.odtheking.odin.events.InputEvent
 import com.odtheking.odin.events.core.on
 import com.odtheking.odin.features.impl.boss.*
-import com.odtheking.odin.features.impl.combat.ModuleSwordBlock
 import com.odtheking.odin.features.impl.dungeon.*
 import com.odtheking.odin.features.impl.dungeon.dungeonwaypoints.DungeonWaypoints
 import com.odtheking.odin.features.impl.dungeon.map.DungeonMap
@@ -73,9 +72,6 @@ object ModuleManager {
             ClickGUIModule, Camera, Etherwarp, PlayerSize, PerformanceHUD, RenderOptimizer,
             ModuleAnimations,
             PlayerDisplay, Waypoints, HidePlayers, Highlight, GyroWand, HitEffect, AntiDebuff,
-
-            // combat
-            ModuleSwordBlock,
 
             //skyblock
             ChatCommands, NoCursorReset, Ragnarock, SpringBoots, WardrobeKeybinds, PetKeybinds, AutoSprint,

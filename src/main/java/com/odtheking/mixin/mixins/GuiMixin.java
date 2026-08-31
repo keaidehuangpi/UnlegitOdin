@@ -1,7 +1,6 @@
 package com.odtheking.mixin.mixins;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import com.odtheking.odin.features.impl.combat.ModuleSwordBlock;
 import com.odtheking.odin.features.impl.skyblock.OverlayType;
 import com.odtheking.odin.features.impl.skyblock.PlayerDisplay;
 import com.odtheking.odin.features.impl.render.AntiDebuff;
@@ -22,14 +21,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Gui.class)
 public class GuiMixin {
-
-    @ModifyExpressionValue(
-            method = "extractItemHotbar",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;isEmpty()Z")
-    )
-    private boolean hideShieldHotbarSlot(boolean original) {
-        return original || ModuleSwordBlock.INSTANCE.getHideShieldSlot() && ModuleSwordBlock.shouldHideOffhand();
-    }
 
     @Inject(method = "extractArmor", at = @At("HEAD"), cancellable = true)
     private static void cancelArmorBar(GuiGraphicsExtractor graphics, Player player, int yLineBase, int numHealthRows, int healthRowHeight, int xLeft, CallbackInfo ci) {
