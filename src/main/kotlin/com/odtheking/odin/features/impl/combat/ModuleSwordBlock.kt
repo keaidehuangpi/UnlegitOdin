@@ -21,7 +21,6 @@ object ModuleSwordBlock : Module(
 ) {
     val onlyVisual by BooleanSetting("OnlyVisual", false, desc = "Only changes the client-side blocking animation.")
     val fakeOnPressing by BooleanSetting("FakeOnPressing", false, desc = "Shows blocking while the use key is held.")
-    val noShield by BooleanSetting("NoShield", false, desc = "Allows visual sword blocking without a shield in the off hand.")
     val hideShieldSlot by BooleanSetting("HideShieldSlot", false, desc = "Keeps the source module's shield-slot option.")
     val applyToThirdPersonView by BooleanSetting("ApplyToThirdPersonView", true, desc = "Applies sword blocking to your third-person model.")
     private val alwaysHideShield by BooleanSetting("AlwaysHideShield", false, desc = "Hides a shield in the off hand whenever SwordBlock is enabled.")
@@ -48,9 +47,7 @@ object ModuleSwordBlock : Module(
 
     private fun shouldApplySwordBlock(entity: LivingEntity): Boolean {
         val player = mc.player
-        if (entity === player && mc.options.keyUse.isDown()
-            && (fakeOnPressing || (noShield && player.offhandItem.item !is ShieldItem))
-        ) return true
+        if (entity === player && fakeOnPressing && mc.options.keyUse.isDown()) return true
 
         if (!entity.isUsingItem) return false
         val useItem = entity.useItem
@@ -80,9 +77,6 @@ object ModuleSwordBlock : Module(
                 )
                 return@onSend
             }
-
-            // NoShield is intentionally visual-only when there is no shield to use.
-            if (noShield) return@onSend
 
             // Match vanilla's prediction sequence after the original sword-use packet is sent.
             val level = mc.level ?: return@onSend
