@@ -2,12 +2,11 @@ package com.odtheking.odin.features.impl.boss
 
 import com.odtheking.odin.clickgui.settings.impl.BooleanSetting
 import com.odtheking.odin.clickgui.settings.impl.SelectorSetting
-import com.odtheking.odin.events.ChatPacketEvent
+import com.odtheking.odin.events.ChatMessageEvent
 import com.odtheking.odin.events.LevelEvent
 import com.odtheking.odin.events.core.on
 import com.odtheking.odin.features.Module
 import com.odtheking.odin.utils.*
-import com.odtheking.odin.utils.ChatManager.hideMessage
 import com.odtheking.odin.utils.skyblock.dungeon.DungeonUtils
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
@@ -56,10 +55,10 @@ object ExtraStats : Module(
     )
 
     init {
-        on<ChatPacketEvent> {
+        on<ChatMessageEvent> {
             if (!DungeonUtils.inDungeons) return@on
 
-            if (cancelRegexes.any { it.matches(value) }) hideMessage()
+            if (cancelRegexes.any { it.matches(value) }) cancel()
 
             if (extraStatsRegex.matches(value)) return@on sendCommand("showextrastats")
 

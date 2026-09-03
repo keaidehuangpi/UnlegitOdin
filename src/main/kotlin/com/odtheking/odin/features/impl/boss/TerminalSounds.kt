@@ -2,7 +2,7 @@ package com.odtheking.odin.features.impl.boss
 
 import com.odtheking.odin.clickgui.settings.Setting.Companion.withDependency
 import com.odtheking.odin.clickgui.settings.impl.BooleanSetting
-import com.odtheking.odin.events.ChatPacketEvent
+import com.odtheking.odin.events.ChatMessageEvent
 import com.odtheking.odin.events.GuiEvent
 import com.odtheking.odin.events.TerminalEvent
 import com.odtheking.odin.events.core.EventPriority
@@ -39,7 +39,7 @@ object TerminalSounds : Module(
         }
 
         on<GuiEvent.SlotClick> (EventPriority.HIGHEST) {
-            if (shouldReplaceSounds) playSoundForSlot(slotId, button)
+            if (shouldReplaceSounds) playSoundForSlot(slotIndex, button)
         }
 
         on<GuiEvent.CustomTermGuiClick> (EventPriority.HIGHEST) {
@@ -51,7 +51,7 @@ object TerminalSounds : Module(
                 it.cancel()
         }
 
-        on<ChatPacketEvent> {
+        on<ChatMessageEvent> {
             if (!DungeonUtils.inDungeons || !shouldReplaceSounds) return@on
             when {
                 value.matches(gateRegex) -> playSoundAtPlayer(SoundEvents.NOTE_BLOCK_PLING.value())

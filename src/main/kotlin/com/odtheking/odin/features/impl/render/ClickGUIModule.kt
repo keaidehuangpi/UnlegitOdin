@@ -6,7 +6,7 @@ import com.odtheking.odin.clickgui.ClickGUI
 import com.odtheking.odin.clickgui.HudManager
 import com.odtheking.odin.clickgui.settings.AlwaysActive
 import com.odtheking.odin.clickgui.settings.impl.*
-import com.odtheking.odin.events.ChatPacketEvent
+import com.odtheking.odin.events.ChatMessageEvent
 import com.odtheking.odin.events.core.on
 import com.odtheking.odin.features.Category
 import com.odtheking.odin.features.Module
@@ -43,6 +43,7 @@ object ClickGUIModule : Module(
 
     private val action by ActionSetting("Open HUD Editor", desc = "Opens the HUD editor when clicked.") { mc.setScreen(HudManager) }
     val devMessage by BooleanSetting("Developer Message", false, desc = "Sends development related messages to the chat.")
+    val dungeonCoresLogging by BooleanSetting("Core loggings", false, desc = "")
 
     private var firstJoin by BooleanSetting("First join", true, "").hide()
 
@@ -81,7 +82,7 @@ object ClickGUIModule : Module(
             postData("https://api.odtheking.com/tele/", """{"username": "$name", "version": "Fabric ${OdinMod.version}"}""")
         }
 
-        on<ChatPacketEvent> {
+        on<ChatMessageEvent> {
             if (!profileRegex.matches(value)) return@on
 
             if (firstJoin) {

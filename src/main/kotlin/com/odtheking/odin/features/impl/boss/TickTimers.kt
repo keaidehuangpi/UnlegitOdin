@@ -3,7 +3,7 @@ package com.odtheking.odin.features.impl.boss
 import com.odtheking.odin.clickgui.settings.Setting.Companion.withDependency
 import com.odtheking.odin.clickgui.settings.impl.BooleanSetting
 import com.odtheking.odin.clickgui.settings.impl.HudElement
-import com.odtheking.odin.events.ChatPacketEvent
+import com.odtheking.odin.events.ChatMessageEvent
 import com.odtheking.odin.events.LevelEvent
 import com.odtheking.odin.events.TickEvent
 import com.odtheking.odin.events.core.on
@@ -79,7 +79,7 @@ object TickTimers : Module(
     private val stormTickHud by HUD("Storm Tick Hud", "Displays a timer for Storm's second phase, optionally counting down to the crush window.") {
         if (it) {
             val (time, max, prefix) = Triple(200, 620, "§bStorm:")
-            textDim(formatTimer(time, max, prefix), 0, 0, Colors.MINECRAFT_DARK_RED)
+            textDim(formatTimer(time, max, prefix, "§a"), 0, 0, Colors.MINECRAFT_DARK_RED)
         } else if (stormTick >= 0) textDim(formatTimer(stormTick, 620, "§bStorm:"), 0, 0, Colors.MINECRAFT_DARK_RED)
         else 0 to 0
     }
@@ -101,7 +101,7 @@ object TickTimers : Module(
     }
 
     init {
-        on<ChatPacketEvent> {
+        on<ChatMessageEvent> {
             when {
                 value.matches(MORT_REGEX) -> secretsCounter = 0
                 value.matches(necronRegex) -> necronTime = 60
